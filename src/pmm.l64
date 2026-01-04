@@ -23,9 +23,28 @@
  */
 
 section .data
-    khello db "[kernel] starting up\n\0"
+    pmm_start db "[pmm] starting initilization\n\0"
+    pmm_mem db "[pmm] memory size: 0x\0"
+    pmm_page db "[pmm] page size: 0x\0"
+    pmm_page2 db "[pmm] pages: 0x\0"
 
-_start:
-    bl _puts, khello 
-    bl _pmm_init
-    hlt
+%define% PAGE_SIZE 0x2000                       ; 8K pages
+
+_pmm_size_log:
+    bl _puts
+    bl _putbase, r1, 16
+    bl _putc, '('
+    bl _putbase, r1, 10
+    bl _putc, ')'
+    bl _putc, '\n'
+    ret
+
+_pmm_init:
+    bl _puts, pmm_start                         ; page memory start
+    bl _get_mem_size
+    mov r0, rr
+    bl _pmm_size_log, pmm_mem, r0
+    bl _pmm_size_log, pmm_page, PAGE_SIZE
+    div r0, PAGE_SIZE
+    bl _pmm_size_log, pmm_page2, r0
+    ret

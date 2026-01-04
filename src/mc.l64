@@ -22,10 +22,8 @@
  * SOFTWARE.
  */
 
-section .data
-    khello db "[kernel] starting up\n\0"
+%define%    MCSIZE  0x1FE00400
 
-_start:
-    bl _puts, khello 
-    bl _pmm_init
-    hlt
+_get_mem_size:
+    ldq rr, MCSIZE                  ; loading memory size
+    ret
