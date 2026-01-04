@@ -34,24 +34,33 @@
 section .data
     time db "Date: \0"
 
+_rtc_2putbase:
+    cmp r0, 10
+    jge .end
+    bl _putc, '0'
+.end:
+    bl _putbase, r0, 10
+    ret
+
 _print_time:
+.loop:
     bl _puts, time
     ldq r0, RTC_DAY
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, '.'
     ldq r0, RTC_MONTH
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, '.'
     ldq r0, RTC_YEAR
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, ' '
     ldq r0, RTC_HOURS
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, ':'
     ldq r0, RTC_MINUTES
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, ':'
     ldq r0, RTC_SECONDS
-    bl _putbase, r0, 10
+    bl _rtc_2putbase, r0
     bl _putc, '\n'
     ret

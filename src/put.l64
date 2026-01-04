@@ -39,6 +39,7 @@ _puts:
     ret
 
 _putbase:
+    mov rr, 0
     jnz r0, .start
     bl _putc, '0'
     ret
@@ -54,6 +55,7 @@ _putbase:
 .digit:
     add r0, 48
 .push:
+    inc rr
     push r0
     mov r0, r2
     jnz r0, .loop
