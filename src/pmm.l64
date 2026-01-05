@@ -23,15 +23,31 @@
  */
 
 section .data
-    pmm_start db "[pmm] starting initilization\n\0"
-    pmm_mem db "[pmm] memory size: 0x\0"
-    pmm_page db "[pmm] page size: 0x\0"
-    pmm_page2 db "[pmm] pages: 0x\0"
+    pmm_suc db "initilization succeeded\n\0"
+    pmm_mem db "memory size:\0"
+    pmm_img db "image size:\0"
+    pmm_page db "page size:\0"
+    pmm_page2 db "pages:\0"
+    pmm_master db "master page ptr:\0"
+    pmm_usable db "usable pages ptr:\0"
+    pmm_mark db "have to mark pages as in use:\0"
+    pmm_size_hex db " 0x\0"
+    pmm_suffix db "[pmm] \0"
 
-%define% PAGE_SIZE 0x2000                       ; 8K pages
+section .bss
+    pmm_master_ptr 8
+
+%define% PAGE_SIZE 0x2000                           ; 8K pages
+%define% NULL 0x0
+
+_pmm_log:
+    bl _puts, pmm_suffix
+    bl _puts
+    ret
 
 _pmm_size_log:
-    bl _puts
+    bl _pmm_log
+    bl _puts, pmm_size_hex
     bl _putbase, r1, 16
     bl _putc, '('
     bl _putbase, r1, 10
@@ -39,12 +55,99 @@ _pmm_size_log:
     bl _putc, '\n'
     ret
 
+_pmm_page_addr:
+    mul rr, r0, PAGE_SIZE                           ; page number by size equals address
+    ret
+
+_pmm_addr_page:
+    mov rr, NULL
+    jz r0, .end
+    div rr, r0, PAGE_SIZE                           ; page number by size equals address
+.end:
+    ret
+
+_pmm_page_get:
+    jz r0, .page_null
+    div r1, r0, 8                                   ; byte index
+    mod r2, r0, 8                                   ; bit index
+    jmp .do_set
+.page_null:
+    mov r1, 0
+    mov r2, 0
+.do_set:
+    ldq r4, pmm_master_ptr
+    add r1, r4
+    ldb r3, r1
+    shr r3, r2
+    and rr, r3, 1
+    ret
+
+_pmm_page_set:
+    jz r0, .page_null
+    div r2, r0, 8
+    mod r3, r0, 8
+    jmp .do_set
+.page_null:
+    mov r2, 0
+    mov r3, 0
+.do_set:
+    ldq r6, pmm_master_ptr
+    add r2, r6
+    ldb r4, r2
+    mov r5, 1
+    shl r5, r3
+    not r5
+    and r4, r5
+    shl r1, r3
+    or r4, r1
+    stb r2, r4
+    ret
+
+_pmm_alloc:
+    mov r0, 0
+.loop:
+    bl _pmm_page_get, r0
+    jz rr, .got_page
+    inc r0
+    jmp .loop
+.got_page:
+    bl _pmm_page_set, r0, 0x1
+    bl _pmm_page_addr, r0
+    ret
+
+_pmm_free:
+    bl _pmm_addr_page
+    bl _pmm_page_set, rr, 0
+    ret
+
 _pmm_init:
-    bl _puts, pmm_start                         ; page memory start
-    bl _get_mem_size
-    mov r0, rr
-    bl _pmm_size_log, pmm_mem, r0
-    bl _pmm_size_log, pmm_page, PAGE_SIZE
-    div r0, PAGE_SIZE
-    bl _pmm_size_log, pmm_page2, r0
+    bl _get_mem_size                                ; asking memory controller nicely to say how large it is
+    mov r0, rr                                      ; moving result to safe location
+    bl _pmm_size_log, pmm_mem, r0                   ; outputting memory size
+    mov r1, __la64_exec_img_end                     ; set r1 to assembler internal img size label
+    bl _pmm_size_log, pmm_img, r1                   ; output image size
+    bl _pmm_size_log, pmm_page, PAGE_SIZE           ; outputting page size
+    div r0, PAGE_SIZE                               ; calculating how many pages fit into address space
+    bl _pmm_size_log, pmm_page2, r0                 ; output how many pages fit into address space
+    add r1, 0x1FFF                                  ; add constants division to the assembler FRIDAAA!!! ahhh
+    div r1, PAGE_SIZE                               ; get the number of pages the image is sized
+    bl _pmm_page_addr, r1                           ; get end address of image
+    mov r2, rr                                      ; store page end address of image into safe location
+    stq pmm_master_ptr, r2                          ; store address so the pointer points to master page(s)
+    bl _pmm_size_log, pmm_master, r2                ; output address of pmm master page
+    div r3, r0, 8                                   ; calculating memory size but in pages
+    add r3, r2
+    add r3, 0x1FFF
+    div r3, PAGE_SIZE
+    bl _pmm_page_addr, r3
+    mov r3, rr
+    bl _pmm_size_log, pmm_usable, r3
+    div r3, PAGE_SIZE
+    bl _pmm_size_log, pmm_mark, r3
+.loop:
+    dec r3
+    bl _pmm_page_set, r3, 0x1                       ; mark page as used
+    jnz r3, .loop
+.end:
+    bl _pmm_log, pmm_suc                            ; page memory start
     ret
