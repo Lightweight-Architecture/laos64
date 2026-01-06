@@ -40,7 +40,6 @@ section .bss
     pmm_max_pages 8                                 ; count of pages
 
 %define% PAGE_SIZE 0x2000                           ; 8K pages
-%define% NULL 0x0
 
 _pmm_log:
     bl _puts, pmm_suffix
@@ -62,21 +61,19 @@ _pmm_page_addr:
     ret
 
 _pmm_addr_page:
-    mov rr, NULL
+    clr rr                                          ; clearing return register to return NULL on failure
     jz r0, .end
     div rr, r0, PAGE_SIZE                           ; page number by size equals address
 .end:
     ret
 
 _pmm_page_get:
-    jz r0, .page_null
+    clr r1, r2
+    jz r0, .do_get
+.page_not_null:
     div r1, r0, 8                                   ; byte index
     mod r2, r0, 8                                   ; bit index
-    jmp .do_set
-.page_null:
-    mov r1, 0
-    mov r2, 0
-.do_set:
+.do_get:
     ldq r4, pmm_master_ptr
     add r1, r4
     ldb r3, r1
@@ -85,13 +82,11 @@ _pmm_page_get:
     ret
 
 _pmm_page_set:
-    jz r0, .page_null
-    div r2, r0, 8
-    mod r3, r0, 8
-    jmp .do_set
-.page_null:
-    mov r2, 0
-    mov r3, 0
+    clr r2, r3
+    jz r0, .do_set
+.page_not_null:
+    div r2, r0, 8                                   ; byte index
+    mod r3, r0, 8                                   ; bit index
 .do_set:
     ldq r6, pmm_master_ptr
     add r2, r6
@@ -106,7 +101,7 @@ _pmm_page_set:
     ret
 
 _pmm_alloc:
-    mov r0, 0
+    clr r0
     ldq r1, pmm_max_pages
 .loop:
     bl _pmm_page_get, r0
@@ -120,7 +115,7 @@ _pmm_alloc:
     bl _pmm_page_addr, r0
     ret
 .no_free_pages:
-    mov rr, 0
+    clr rr
     ret
 
 _pmm_free:
