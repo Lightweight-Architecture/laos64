@@ -35,7 +35,8 @@ section .data
     pmm_suffix db "[pmm] \0"
 
 section .bss
-    pmm_master_ptr 8
+    pmm_init_once 1                                 ; once initilizer boolean
+    pmm_master_ptr 8                                ; address that points at the main page
 
 %define% PAGE_SIZE 0x2000                           ; 8K pages
 %define% NULL 0x0
@@ -121,6 +122,8 @@ _pmm_free:
     ret
 
 _pmm_init:
+    ldb r0, pmm_init_once                           ; get once initilizer boolean value
+    jnz r0, .return                                 ; if its initilized return early
     bl _get_mem_size                                ; asking memory controller nicely to say how large it is
     mov r0, rr                                      ; moving result to safe location
     bl _pmm_size_log, pmm_mem, r0                   ; outputting memory size
@@ -150,4 +153,6 @@ _pmm_init:
     jnz r3, .loop
 .end:
     bl _pmm_log, pmm_suc                            ; page memory start
+    stb pmm_init_once, 1                            ; mark as initilized
+.return:
     ret
