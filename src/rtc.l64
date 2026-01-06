@@ -43,24 +43,27 @@ _rtc_2putbase:
     ret
 
 _print_time:
-.loop:
+    mov r1, RTC_DAY
     bl _puts, time
-    ldq r0, RTC_DAY
+.loop:
+    ldd r0, r1
     bl _rtc_2putbase, r0
+    add r1, 4
+    cmp r1, RTC_YEAR
+    jgt .loop_2_entry
     bl _putc, '.'
-    ldq r0, RTC_MONTH
-    bl _rtc_2putbase, r0
-    bl _putc, '.'
-    ldq r0, RTC_YEAR
-    bl _rtc_2putbase, r0
+    jmp .loop
+.loop_2_entry:
+    sub r1, 16
     bl _putc, ' '
-    ldq r0, RTC_HOURS
+.loop_2:
+    ldd r0, r1
     bl _rtc_2putbase, r0
+    sub r1, 4
+    cmp r1, RTC_SECONDS
+    jlt .end
     bl _putc, ':'
-    ldq r0, RTC_MINUTES
-    bl _rtc_2putbase, r0
-    bl _putc, ':'
-    ldq r0, RTC_SECONDS
-    bl _rtc_2putbase, r0
+    jmp .loop_2
+.end:
     bl _putc, '\n'
     ret

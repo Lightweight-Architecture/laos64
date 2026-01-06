@@ -45,6 +45,7 @@ _free_test:
 
 _start:
     bl _puts, khello 
+    bl _print_time
     bl _pmm_init
     bl _alloca_test
     mov r0, rr
