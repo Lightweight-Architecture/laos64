@@ -49,9 +49,11 @@ _main:
     mov r0, rr
     bl _alloca_test, 32
     bl _alloca_test, 32
+    mov r1, rr
     bl _alloca_test, 32
     bl _alloca_test, 32
-    bl _free_test
+    bl _free_test, r0
+    bl _free_test, r1
     bl _alloca_test, 32
     bl _alloca_test, 32
     bl _alloca_test, 32
