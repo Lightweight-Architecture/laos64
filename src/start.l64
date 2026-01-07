@@ -43,7 +43,6 @@ _free_test:
     ret
 
 _start:
-    bl _pmm_init
     bl _alloca_test
     mov r0, rr
     bl _alloca_test
