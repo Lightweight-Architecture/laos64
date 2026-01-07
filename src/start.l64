@@ -27,7 +27,7 @@ section .data
     kfree db "[kernel] freed: 0x\0"
 
 _alloca_test:
-    bl _pmm_alloc
+    bl _kmalloc
     mov r0, rr
     bl _puts, kalloc
     bl _putbase, r0, 16
@@ -36,20 +36,25 @@ _alloca_test:
     ret
 
 _free_test:
-    bl _pmm_free, r0
+    bl _kfree
     bl _puts, kfree
     bl _putbase, r0, 16
     bl _putc, '\n'
     ret
 
 _main:
-    bl _alloca_test
+    bl _slab_init
+    bl _alloca_test, 32
+    bl _alloca_test, 32
     mov r0, rr
-    bl _alloca_test
-    bl _alloca_test
-    bl _free_test, r0
-    bl _alloca_test
-    bl _alloca_test
+    bl _alloca_test, 32
+    bl _alloca_test, 32
+    bl _alloca_test, 32
+    bl _alloca_test, 32
+    bl _free_test
+    bl _alloca_test, 32
+    bl _alloca_test, 32
+    bl _alloca_test, 32
     ret
 
 _start:
