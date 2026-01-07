@@ -42,7 +42,7 @@ _free_test:
     bl _putc, '\n'
     ret
 
-_start:
+_main:
     bl _alloca_test
     mov r0, rr
     bl _alloca_test
@@ -50,4 +50,8 @@ _start:
     bl _free_test, r0
     bl _alloca_test
     bl _alloca_test
-    hlt
+    ret
+
+_start:
+    bl _main                                    ; branching to main symbol
+    stb 0x1FE00500, 0                           ; telling platform device to turn off
