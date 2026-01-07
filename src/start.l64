@@ -23,7 +23,6 @@
  */
 
 section .data
-    khello db "[kernel] starting up\n\0"
     kalloc db "[kernel] allocated: 0x\0"
     kfree db "[kernel] freed: 0x\0"
 
@@ -44,8 +43,6 @@ _free_test:
     ret
 
 _start:
-    bl _puts, khello 
-    bl _print_time
     bl _pmm_init
     bl _alloca_test
     mov r0, rr

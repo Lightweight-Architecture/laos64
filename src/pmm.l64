@@ -22,39 +22,12 @@
  * SOFTWARE.
  */
 
-section .data
-    pmm_suc db "initilization succeeded\n\0"
-    pmm_mem db "memory size:\0"
-    pmm_img db "image size:\0"
-    pmm_page db "page size:\0"
-    pmm_page2 db "pages:\0"
-    pmm_master db "master page ptr:\0"
-    pmm_usable db "usable pages ptr:\0"
-    pmm_mark db "have to mark pages as in use:\0"
-    pmm_size_hex db " 0x\0"
-    pmm_suffix db "[pmm] \0"
-
 section .bss
     pmm_init_once 1                                 ; once initilizer boolean
     pmm_master_ptr 8                                ; address that points at the main page
     pmm_max_pages 8                                 ; count of pages
 
 %define% PAGE_SIZE 0x2000                           ; 8K pages
-
-_pmm_log:
-    bl _puts, pmm_suffix
-    bl _puts
-    ret
-
-_pmm_size_log:
-    bl _pmm_log
-    bl _puts, pmm_size_hex
-    bl _putbase, r1, 16
-    bl _putc, '('
-    bl _putbase, r1, 10
-    bl _putc, ')'
-    bl _putc, '\n'
-    ret
 
 _pmm_page_addr:
     mul rr, r0, PAGE_SIZE                           ; page number by size equals address
@@ -128,38 +101,37 @@ _pmm_free:
     ret
 
 _pmm_init:
-    ldb r0, pmm_init_once                           ; get once initilizer boolean value
-    jnz r0, .return                                 ; if its initilized return early
-    bl _get_mem_size                                ; asking memory controller nicely to say how large it is
+    /* sanity checks to make sure page memory manager is only initilized once in kernel lifetime */
+    ldb r0, pmm_init_once
+    jnz r0, .return                                 ; early return to end
+
+    /* getting memory size */
+    bl _mc_get_mem_size                             ; asking memory controller nicely to say how large it is
     mov r0, rr                                      ; moving result to safe location
-    bl _pmm_size_log, pmm_mem, r0                   ; outputting memory size
-    mov r1, __la64_exec_img_end                     ; set r1 to assembler internal img size label
-    bl _pmm_size_log, pmm_img, r1                   ; output image size
-    bl _pmm_size_log, pmm_page, PAGE_SIZE           ; outputting page size
-    div r0, PAGE_SIZE                               ; calculating how many pages fit into address space
+
+    /* dividing through page size to get count of pages that fit into the memory space */
+    div r0, PAGE_SIZE
     stq pmm_max_pages, r0                           ; store count of maximum pages
-    bl _pmm_size_log, pmm_page2, r0                 ; output how many pages fit into address space
-    add r1, 0x1FFF                                  ; add constants division to the assembler FRIDAAA!!! ahhh
+
+    /* getting the count of pages in use by the kernel image */
+    mov r1, __la64_exec_img_end
+    add r1, 0x1FFF                                  ; add constants math (PAGE_SIZE - 1) to the assembler FRIDAAA!!! ahhh
     div r1, PAGE_SIZE                               ; get the number of pages the image is sized
+
+    /* getting the end address of image but in the logic of our page math */
     bl _pmm_page_addr, r1                           ; get end address of image
-    mov r2, rr                                      ; store page end address of image into safe location
-    stq pmm_master_ptr, r2                          ; store address so the pointer points to master page(s)
-    bl _pmm_size_log, pmm_master, r2                ; output address of pmm master page
+    stq pmm_master_ptr, rr                          ; store address 
+
+    /* prepare for loop */
     div r3, r0, 8                                   ; calculating memory size but in pages
-    add r3, r2                                      ; adding master page pointer to offset
+    add r3, rr                                      ; adding master page pointer to offset
     add r3, 0x1FFF                                  ; adding page size - 1 (FRIDA ADD MATH OPS FOR CONSTANTS AT ASSEMBLING TIME)
     div r3, PAGE_SIZE                               ; do ceiling calculating
-    bl _pmm_page_addr, r3                           ; get page address
-    mov r3, rr                                      ; here we go, knowing the address of the first usable page
-    bl _pmm_size_log, pmm_usable, r3                ; outputting usable pointer that doesnt really exist
-    div r3, PAGE_SIZE                               ; division through page size
-    bl _pmm_size_log, pmm_mark, r3                  ; know we know how many pages from start to end we have to mark as used
 .loop:
     dec r3
     bl _pmm_page_set, r3, 0x1                       ; mark page as used
     jnz r3, .loop
 .end:
-    bl _pmm_log, pmm_suc                            ; page memory start
     stb pmm_init_once, 1                            ; mark as initilized
 .return:
     ret

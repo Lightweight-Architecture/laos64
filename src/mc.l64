@@ -24,6 +24,6 @@
 
 %define%    MCSIZE  0x1FE00400
 
-_get_mem_size:
+_mc_get_mem_size:
     ldq rr, MCSIZE                  ; loading memory size
     ret
