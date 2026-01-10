@@ -37,6 +37,5 @@ _main:
 _start:
     bl _pmm_init                                ; initilizing page allocator
     bl _slab_init                               ; initilizing slab allocator
-    bl _kmalloc, 8                              ; fixing kfree issues? (have to fix kmalloc tremendously)
     bl _main                                    ; branching to main symbol
     stb 0x1FE00500, 0                           ; telling platform device to turn off

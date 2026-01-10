@@ -23,77 +23,87 @@
 ;
 
 section .data
-    size_classes dq 32, 64, 128, 256, 512, 1024, 2048, 4096
     objs_per_class dq 254, 127, 63, 31, 15, 7, 3, 1
 
 section .bss
     size_caches 320
 
-%define% PAGE_MASK           0xFFFFFFFFFFFFE000
-%define% SLAB_META_SIZE      64
+%define% PAGE_MASK              0xFFFFFFFFFFFFE000
+%define% SLAB_META_SIZE         64                              ; size of slab metadata
 
-%define% SLAB_OFF_BASE       0x00
-%define% SLAB_OFF_CACHE      0x08
-%define% SLAB_OFF_NEXT       0x10
-%define% SLAB_OFF_INUSE      0x18
-%define% SLAB_OFF_BITMAP     0x20
+%define% SLAB_OFF_BASE          0x00
+%define% SLAB_OFF_CACHE         0x08
+%define% SLAB_OFF_NEXT          0x10
+%define% SLAB_OFF_INUSE         0x18
+%define% SLAB_OFF_BITMAP        0x20
 
-%define% CACHE_OFF_SIZE      0x00
-%define% CACHE_OFF_OBJS      0x08
-%define% CACHE_OFF_PARTIAL   0x10
-%define% CACHE_OFF_FULL      0x18
-%define% CACHE_OFF_EMPTY     0x20
-%define% CACHE_STRUCT_SIZE   40
+%define% CACHE_OFF_SIZE         0x00
+%define% CACHE_OFF_OBJS         0x08
+%define% CACHE_OFF_PARTIAL      0x10
+%define% CACHE_OFF_FULL         0x18
+%define% CACHE_OFF_EMPTY        0x20
+%define% CACHE_STRUCT_SIZE      40
 
-%define% NUM_SIZE_CLASSES    8
+%define% NUM_SIZE_CLASSES       7
+%define% NUM_SIZE_CLASSES_START 32
+
+_get_size_class:
+    mov rr, NUM_SIZE_CLASSES_START
+    cmp r0, NUM_SIZE_CLASSES
+    jge .done
+.start:
+    mul rr, 2
+    cmp r0, 0
+    dec r0
+    jne .start
+.done:
+    ret
 
 _slab_init:
     clr r0
     mov r1, size_caches
-    mov r2, size_classes
     mov r3, objs_per_class
     
 .loop:
-    cmp r0, NUM_SIZE_CLASSES
+    cmp r0, NUM_SIZE_CLASSES                                    ; checking if r0 is greater than the number of size classes which means all size classes have been initilized
     jge .done
-    ldq r4, r2
-    stq r1, r4
-    ldq r4, r3
-    add r5, r1, CACHE_OFF_OBJS
-    stq r5, r4
+    bl _get_size_class, r0                                      ; getting size class from programatic symbol
+    
+    mov r4, rr                                                  ; moving size result into the appropriate register
+    stq r1, r4                                                  ; storing size class into size chache slot
+    ldq r4, r3                                                  ; loading objects per class
+    add r5, r1, CACHE_OFF_OBJS                                  ; get the address of the cache objects value in structure
+    stq r5, r4                                                  ; storing objects count into objects
     add r5, r1, CACHE_OFF_PARTIAL
     stq r5, 0
     add r5, r1, CACHE_OFF_FULL
     stq r5, 0
     add r5, r1, CACHE_OFF_EMPTY
     stq r5, 0
-    add r0, 1
+    inc r0
     add r1, CACHE_STRUCT_SIZE
-    add r2, 8
     add r3, 8
     jmp .loop
 .done:
     ret
 
 _find_size_class:
-    clr r1
-    mov r2, size_classes
+    clr r1                                                      ; clearing 1st general purpose register
 .loop:
-    cmp r1, NUM_SIZE_CLASSES
+    cmp r1, NUM_SIZE_CLASSES                                    ; same as above, the classes count comparison
     jge .too_large
-    ldq r3, r2
-    cmp r0, r3
+    bl _get_size_class, r1                                      ; getting size class
+    cmp r0, rr                                                  ; checking if we found the appropriate size class
     jle .found
-    add r1, 1
-    add r2, 8
-    jmp .loop
+    inc r1                                                      ; incrementing return
+    jmp .loop                                                   ; loop till we found what were looking for
 .found:
-    mov rr, r1
-    mul rr, CACHE_STRUCT_SIZE
-    add rr, size_caches
+    mov rr, r1                                                  ; found appropriate size class so now we multiplacate with the size of one cache structure entry
+    mul rr, CACHE_STRUCT_SIZE                                   ; seeee
+    add rr, size_caches                                         ; adding offset to caches
     ret
 .too_large:
-    clr rr
+    clr rr                                                      ; clearing return register
     ret
 
 _create_slab:
