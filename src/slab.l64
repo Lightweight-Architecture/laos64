@@ -51,6 +51,7 @@ _get_size_class:
     mov rr, NUM_SIZE_CLASSES_START
     cmp r0, NUM_SIZE_CLASSES
     jge .done
+    jz r0, .done
 .start:
     mul rr, 2
     cmp r0, 0
@@ -233,7 +234,7 @@ _kmalloc:
     ret
 
 _kfree:
-    jz r0, .done
+    jz r0, .done                                                ; null pointer checking r0
     mov r1, r0
     and r0, PAGE_MASK
     add r2, r0, PAGE_SIZE

@@ -36,7 +36,7 @@ _main:
     bl _putbase, r0, 16
     bl _putc, '\n'
     bl _puts, r0
-    ;bl _kfree, r0                              ; wtf still the freeing bug??? deadlock btw
+    bl _kfree, r0
     ret
 
 _start:
