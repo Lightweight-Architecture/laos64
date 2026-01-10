@@ -22,25 +22,23 @@
 ; SOFTWARE.
 ;
 
-section .data
-    hello db "hello, world!\n\0"
-    alloc db "duplicated string at 0x\0"
-    allocn db " to 0x\0"
-
-_main:
-    bl _strdup, hello
-    mov r0, rr
-    bl _puts, alloc
-    bl _putbase, hello, 16
-    bl _puts, allocn
-    bl _putbase, r0, 16
-    bl _putc, '\n'
-    bl _puts, r0
-    ;bl _kfree, r0                              ; wtf still the freeing bug??? deadlock btw
+_strlen:
+    clr rr
+.loop:
+    ldb r1, r0
+    inc r0, rr
+    jnz r1, .loop
     ret
 
-_start:
-    bl _pmm_init                                ; initilizing page allocator
-    bl _slab_init                               ; initilizing slab allocator
-    bl _main                                    ; branching to main symbol
-    stb 0x1FE00500, 0                           ; telling platform device to turn off
+_strdup:
+    bl _strlen, r0
+    mov r1, rr
+    bl _kmalloc, r1
+    mov r2, rr
+.loop:
+    ldb r3, r0
+    stb r2, r3
+    dec r1
+    inc r0, r2
+    jnz r1, .loop
+    ret
