@@ -315,3 +315,12 @@ _kfree:
     bl _pmm_free
 .done:
     ret
+
+_kcalloc:
+    mul r0, r1                                                  ; calculating final memory allocation size
+    bl _kmalloc, r0                                             ; allocating size
+    mov r1, rr                                                  ; keeping return value at a safe place
+    jz rr, .null_exception                                      ; handling null pointer
+    bl _memset, r1, 0, r0                                       ; nullifying the memory
+.null_exception:
+    ret
