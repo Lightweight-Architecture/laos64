@@ -22,25 +22,34 @@
 ; SOFTWARE.
 ;
 
+%define% PLATFORM_PWR   0x1FE00500
+
 section .data
     hello db "hello, world!\n\0"
-    alloc db "duplicated string at 0x\0"
-    allocn db " to 0x\0"
+    helloreplace db "kitty!\n\0"
+    excstr db "Something terrible has happened\n\0"
 
 _main:
-    bl _strdup, hello
+    bl _strdup, hello                               ; duplicating hello world string
     mov r0, rr
-    bl _puts, alloc
-    bl _putbase, hello, 16
-    bl _puts, allocn
-    bl _putbase, r0, 16
-    bl _putc, '\n'
-    bl _puts, r0
-    bl _kfree, r0
+    jz r0, .panic                                   ; causing panic if address is null
+    bl _puts, r0                                    ; outputting the string using relative address
+    bl _strlen, r0                                  ; getting lenght of duplicated string
+    mov r1, rr
+    bl _strlen, helloreplace                        ; getting lenght of replacement
+    mov r2, rr                                      ; calculating base of destination to copy the replacement to
+    sub r3, r1, r2
+    add r3, r0
+    bl _memcpy, r3, helloreplace, r2                ; copying replacement to the base of the replacement start
+    bl _puts, r0                                    ; outputting result
+    bl _kfree, r0                                   ; releasing string
+    ret
+.panic:
+    bl _puts, excstr                                ; outputting panic string
     ret
 
 _start:
-    bl _pmm_init                                ; initilizing page allocator
-    bl _slab_init                               ; initilizing slab allocator
-    bl _main                                    ; branching to main symbol
-    stb 0x1FE00500, 0                           ; telling platform device to turn off
+    bl _pmm_init                                    ; initilizing page allocator
+    bl _slab_init                                   ; initilizing slab allocator
+    bl _main                                        ; branching to main symbol
+    stb PLATFORM_PWR, 0                             ; telling platform device to turn off
