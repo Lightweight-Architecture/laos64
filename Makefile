@@ -3,10 +3,10 @@
 all: compile execute clean
 
 compile:
-	la64asm -c src/*.l64
+	la64asm -o laos64 src/*.l64
 
 execute:
-	la64 ./a.out
+	la64 ./laos64
 
 clean:
-	rm a.out
+	rm laos64
