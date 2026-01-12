@@ -74,9 +74,6 @@ _pmm_page_set:
     ret
 
 _pmm_alloc:
-    ; calling init to make sure its only called when initilized
-    bl _pmm_init
-
     ; preparing for loop
     clr r0
     ldq r1, pmm_max_pages
@@ -98,9 +95,6 @@ _pmm_alloc:
     ret
 
 _pmm_free:
-    ; calling init to make sure its only called when initilized
-    bl _pmm_init
-
     ; getting page from address
     bl _pmm_addr_page
     ldq r0, pmm_max_pages
