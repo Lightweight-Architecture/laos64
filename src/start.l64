@@ -32,17 +32,21 @@ section .data
 _main:
     bl _strdup, hello                               ; duplicating hello world string
     mov r0, rr
+    bl _strdup, helloreplace
+    mov r1, rr
     jz r0, .panic                                   ; causing panic if address is null
+    jz r1, .panic
     bl _puts, r0                                    ; outputting the string using relative address
     bl _strlen, r0                                  ; getting lenght of duplicated string
-    mov r1, rr
+    mov r2, rr
     bl _strlen, helloreplace                        ; getting lenght of replacement
-    mov r2, rr                                      ; calculating base of destination to copy the replacement to
-    sub r3, r1, r2
-    add r3, r0
-    bl _memcpy, r3, helloreplace, r2                ; copying replacement to the base of the replacement start
+    mov r3, rr                                      ; calculating base of destination to copy the replacement to
+    sub r4, r2, r3
+    add r4, r0
+    bl _memcpy, r4, r1, r2                          ; copying replacement to the base of the replacement start
     bl _puts, r0                                    ; outputting result
-    bl _kfree, r0                                   ; releasing string
+    bl _kfree, r0                                   ; releasing strings in the oppposite order making sure slab allocation and freeing works correctly
+    bl _kfree, r1
     ret
 .panic:
     bl _puts, excstr                                ; outputting panic string
