@@ -22,12 +22,6 @@
 ; SOFTWARE.
 ;
 
-section .data
-    objs_per_class dq 254, 127, 63, 31, 15, 7, 3, 1
-
-section .bss
-    size_caches 320
-
 %define% PAGE_MASK              0xFFFFFFFFFFFFE000
 %define% SLAB_META_SIZE         64                              ; size of slab metadata
 
@@ -47,6 +41,9 @@ section .bss
 %define% NUM_SIZE_CLASSES       7
 %define% NUM_SIZE_CLASSES_START 32
 
+section .bss
+    size_caches 320
+
 _get_size_class:
     mov rr, NUM_SIZE_CLASSES_START
     cmp r0, NUM_SIZE_CLASSES
@@ -60,19 +57,22 @@ _get_size_class:
 .done:
     ret
 
+_get_objs_per_class:
+    mov rr, 0b11111110
+    shr rr, r0
+    ret
+
 _slab_init:
     clr r0
     mov r1, size_caches
-    mov r3, objs_per_class
-    
 .loop:
     cmp r0, NUM_SIZE_CLASSES                                    ; checking if r0 is greater than the number of size classes which means all size classes have been initilized
     jge .done
-    bl _get_size_class, r0                                      ; getting size class from programatic symbol
-    
+    bl _get_size_class, r0                                      ; getting size class from programatic symbol    
     mov r4, rr                                                  ; moving size result into the appropriate register
     stq r1, r4                                                  ; storing size class into size chache slot
-    ldq r4, r3                                                  ; loading objects per class
+    bl _get_objs_per_class, r0                                  ; getting objects count for class
+    mov r4, rr
     add r5, r1, CACHE_OFF_OBJS                                  ; get the address of the cache objects value in structure
     stq r5, r4                                                  ; storing objects count into objects
     add r5, r1, CACHE_OFF_PARTIAL
@@ -83,7 +83,6 @@ _slab_init:
     stq r5, 0
     inc r0
     add r1, CACHE_STRUCT_SIZE
-    add r3, 8
     jmp .loop
 .done:
     ret

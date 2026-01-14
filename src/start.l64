@@ -27,7 +27,7 @@
 section .data
     hello db "hello, world!\n\0"
     helloreplace db "kitty!\n\0"
-    excstr db "Something terrible has happened\n\0"
+    excstr db "panic\n\0"
 
 _main:
     bl _strdup, hello                               ; duplicating hello world string
@@ -40,8 +40,7 @@ _main:
     bl _strlen, r0                                  ; getting lenght of duplicated string
     mov r2, rr
     bl _strlen, helloreplace                        ; getting lenght of replacement
-    mov r3, rr                                      ; calculating base of destination to copy the replacement to
-    sub r4, r2, r3
+    sub r4, r2, rr                                  ; calculating base of destination to copy the replacement to
     add r4, r0
     bl _memcpy, r4, r1, r2                          ; copying replacement to the base of the replacement start
     bl _puts, r0                                    ; outputting result
