@@ -23,9 +23,9 @@
 ;
 
 section .bss
-    pmm_init_once 1                                 ; once initilizer boolean
-    pmm_master_ptr 8                                ; address that points at the main page
-    pmm_max_pages 8                                 ; count of pages
+    pmm_init_once db 1                              ; once initilizer boolean
+    pmm_master_ptr dq 1                             ; address that points at the main page
+    pmm_max_pages dq 1                              ; count of pages
 
 %define% PAGE_SIZE 0x2000                           ; 8K pages
 

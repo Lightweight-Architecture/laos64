@@ -42,7 +42,7 @@
 %define% NUM_SIZE_CLASSES_START 32
 
 section .bss
-    size_caches 320
+    size_caches db 320
 
 _get_size_class:
     mov rr, NUM_SIZE_CLASSES_START
