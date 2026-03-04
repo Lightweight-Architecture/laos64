@@ -29,6 +29,12 @@
 %define% INTC_REG_ACK           0x1FE00020
 %define% INTC_REG_CURRENT       0x1FE00028
 
+%define% IRQ_TIMER		0
+%define% IRQ_UART		1
+%define% IRQ_DISK		2
+%define% IRQ_NETWORK		3
+%define% IRQ_SOFTWARE		4
+
 section .bss
     ivec dq 63
 
