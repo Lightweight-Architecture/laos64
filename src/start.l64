@@ -25,32 +25,42 @@
 %define% PLATFORM_PWR   0x1FE00500
 
 section .data
-    hello db "hello, world!\n\0"
-    helloreplace db "kitty!\n\0"
-    excstr db "panic\n\0"
+    exception db "[*] catched exception: 0x\0"
+    vec dq 0x0, 0x0, 0x0, 0x0, _handle_software
+
+; handlers for interrupt controller vector table
+_handle_software:
+    bl _puts, exception
+    bl _putbase, cr2, 16
+    bl _putc, '\n'
+    iret
+
+; kernel main
+%define% INTC_REG_PENDING	0x1FE00000
+%define% INTC_REG_ENABLED	0x1FE00008
+%define% INTC_REG_CTRL		0x1FE00010
+%define% INTC_REG_VECTOR   	0x1FE00018
+%define% INTC_REG_ACK		0x1FE00020
+%define% INTC_REG_CURRENT	0x1FE00028
+%define% INTC_REG_SAVED_PC	0x1FE00030
 
 _main:
-    bl _strdup, hello                               ; duplicating hello world string
-    mov r0, rr
-    bl _strdup, helloreplace
-    mov r1, rr
-    jz r0, .panic                                   ; causing panic if address is null
-    jz r1, .panic
-    bl _puts, r0                                    ; outputting the string using relative address
-    bl _strlen, r0                                  ; getting lenght of duplicated string
-    mov r2, rr
-    bl _strlen, helloreplace                        ; getting lenght of replacement
-    sub r4, r2, rr                                  ; calculating base of destination to copy the replacement to
-    add r4, r0
-    bl _memcpy, r4, r1, r2                          ; copying replacement to the base of the replacement start
-    bl _puts, r0                                    ; outputting result
-    bl _kfree, r0                                   ; releasing strings in the oppposite order making sure slab allocation and freeing works correctly
-    bl _kfree, r1
-    ret
-.panic:
-    bl _puts, excstr                                ; outputting panic string
+    ; allocate kernel stack for the interrupt handlers
+    bl _pmm_alloc
+    add rr, 0x1FFE
+    mov cr1, rr
+
+    ; set vector base
+    stq INTC_REG_VECTOR, vec
+    stb INTC_REG_ENABLED, 0b00010000
+    stq INTC_REG_CTRL, 1
+
+    ; cause exception
+    div r0, 0				; bad arithmetic
+    ldq r0, 0xFFFFFFFFFFFFFFFF		; bad access
     ret
 
+; main setup routine
 _start:
     bl _pmm_init                                    ; initilizing page allocator
     bl _slab_init                                   ; initilizing slab allocator
