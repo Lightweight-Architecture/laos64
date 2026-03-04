@@ -26,6 +26,7 @@
 
 section .data
     exception db "[*] catched exception: 0x\0"
+    timer db "[*] timer fired\n\0"
 
 ; handlers for interrupt controller vector table
 _handle_software:
@@ -34,8 +35,26 @@ _handle_software:
     bl _putc, '\n'
     iret
 
+_handle_timer:
+    bl _puts, timer
+    iret
+
+; kernel entry
 _main:
+    ; register exception handlers
     bl _interrupt_register_handler, IRQ_SOFTWARE, _handle_software
+    bl _interrupt_register_handler, IRQ_TIMER, _handle_timer
+
+    ; testing timer
+    ldq r0, 0x1FE00120
+    shl r0, 1
+    
+    stq 0x1FE00108, 0
+    stq 0x1FE00110, r0
+    stq 0x1FE00100, 0x7
+
+    ; waiting for timer to fire
+    hlt
 
     ; cause exception
     div r0, 0				; bad arithmetic
