@@ -42,7 +42,6 @@ _handle_software:
 %define% INTC_REG_VECTOR   	0x1FE00018
 %define% INTC_REG_ACK		0x1FE00020
 %define% INTC_REG_CURRENT	0x1FE00028
-%define% INTC_REG_SAVED_PC	0x1FE00030
 
 _main:
     ; allocate kernel stack for the interrupt handlers

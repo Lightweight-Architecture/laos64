@@ -29,16 +29,16 @@
 
 _uart_putc:
 .start:
-    ldq r1, UART_STATUS
+    ldd r1, UART_STATUS
     and r1, UART_STATUS_TX_EMPTY
     jz r1, .start
-    stq UART_DATA, r0
+    std UART_DATA, r0
     ret
 
 _uart_getc:
 .start:
-    ldq r1, UART_STATUS
+    ldd r1, UART_STATUS
     and r1, UART_STATUS_RX_READY
     jz r1, .start
-    ldq rr, UART_DATA
+    ldd rr, UART_DATA
     ret
