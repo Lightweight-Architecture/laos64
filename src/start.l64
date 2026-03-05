@@ -25,40 +25,38 @@
 %define% PLATFORM_PWR   0x1FE00500
 
 section .data
-    exception db "[*] catched exception: 0x\0"
-    timer db "[*] timer fired\n\0"
+    exception_msg db "[!] panic because of exception code: 0x\0"
+    hello_msg db "hello world!\r\n\0"
 
-; handlers for interrupt controller vector table
-_handle_software:
-    bl _puts, exception
+; exception handler
+_exception_handler:
+    bl _puts, exception_msg
     bl _putbase, cr2, 16
     bl _putc, '\n'
-    iret
 
-_handle_timer:
-    bl _puts, timer
-    iret
+    ; no iret needed, platform is panicking
+    stb PLATFORM_PWR, 0
+
+    ; some experiments that work:
+    ; you can keep running with this code:
+    ;
+    ; clr cr2
+    ; iret
 
 ; kernel entry
 _main:
-    ; register exception handlers
-    bl _interrupt_register_handler, IRQ_SOFTWARE, _handle_software
-    bl _interrupt_register_handler, IRQ_TIMER, _handle_timer
+    ; registering exception handler
+    bl _interrupt_register_handler IRQ_EXCEPTION, _exception_handler
 
-    ; testing timer
-    ldq r0, 0x1FE00120
-    shl r0, 1
-    
-    stq 0x1FE00108, 0
-    stq 0x1FE00110, r0
-    stq 0x1FE00100, 0x7
-
-    ; waiting for timer to fire
+    ; let the scheduler do its thing
+    mov r0, 20
+.idle:
     hlt
+    bl _puts, hello_msg
+    dec r0
+    jnz r0, .idle
 
-    ; cause exception
-    div r0, 0				; bad arithmetic
-    ldq r0, 0xFFFFFFFFFFFFFFFF		; bad access
+    ; return after 20 interrupts
     ret
 
 ; main setup routine
@@ -66,5 +64,6 @@ _start:
     bl _pmm_init                                    ; initilizing page allocator
     bl _slab_init                                   ; initilizing slab allocator
     bl _interrupt_init                              ; initilizing interrupt controller
+    bl _scheduler_init                              ; initilizing scheduler
     bl _main                                        ; branching to main symbol
     stb PLATFORM_PWR, 0                             ; telling platform device to turn off
