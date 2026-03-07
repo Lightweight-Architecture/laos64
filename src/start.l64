@@ -142,6 +142,9 @@ _main:
     clr cr4
     mov sp, r10
 
+    ; say hello
+    bl _puts, hello_msg
+
     ret
 
 ; main setup routine

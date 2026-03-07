@@ -22,13 +22,9 @@
 ; SOFTWARE.
 ;
 
-_putc:
-    bl _uart_putc
-    ret
-
-_getc:
-    bl _uart_getc
-    ret
+; these are just stubs around the same thing
+%define% _putc _uart_putc
+%define% _getc _uart_getc
 
 _puts:
 .start:
