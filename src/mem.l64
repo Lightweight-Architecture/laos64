@@ -25,13 +25,13 @@
 _memset:
     and r1, 0xFF        ; masking set value with byte mask so it doesnt exceed expectations
     add r2, r0          ; adding base address to lenght to have the end address
-    jmp .loop_continue
+    b .loop_continue
 .loop:
     stb r0, r1          ; setting value at address
     inc r0
 .loop_continue:
     sub r3, r2, r0      ; calculating remaining lenght
-    jnz r3, .loop       ; in-case r3 is still not zero we continue
+    bnz r3, .loop       ; in-case r3 is still not zero we continue
     ret
 
 _memcpy:
@@ -42,5 +42,5 @@ _memcpy:
     inc r0, r1
 .loop_continue:
     cmp r0, r3
-    jle .loop
+    ble .loop
     ret

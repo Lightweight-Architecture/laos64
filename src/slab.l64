@@ -47,13 +47,13 @@ section .bss
 _get_size_class:
     mov rr, NUM_SIZE_CLASSES_START
     cmp r0, NUM_SIZE_CLASSES
-    jge .done
-    jz r0, .done
+    bge .done
+    bz r0, .done
 .start:
     mul rr, 2
     cmp r0, 0
     dec r0
-    jne .start
+    bne .start
 .done:
     ret
 
@@ -67,7 +67,7 @@ _slab_init:
     mov r1, size_caches
 .loop:
     cmp r0, NUM_SIZE_CLASSES                                    ; checking if r0 is greater than the number of size classes which means all size classes have been initilized
-    jge .done
+    bge .done
     bl _get_size_class, r0                                      ; getting size class from programatic symbol    
     mov r4, rr                                                  ; moving size result into the appropriate register
     stq r1, r4                                                  ; storing size class into size chache slot
@@ -83,7 +83,7 @@ _slab_init:
     stq r5, 0
     inc r0
     add r1, CACHE_STRUCT_SIZE
-    jmp .loop
+    b .loop
 .done:
     ret
 
@@ -91,12 +91,12 @@ _find_size_class:
     mov r1, 0
 .loop:
     cmp r1, NUM_SIZE_CLASSES                                    ; same as above, the classes count comparison
-    jge .too_large
+    bge .too_large
     bl _get_size_class, r1                                      ; getting size class
     cmp r0, rr                                                  ; checking if we found the appropriate size class
-    jle .found
+    ble .found
     inc r1                                                      ; incrementing return
-    jmp .loop                                                   ; loop till we found what were looking for
+    b .loop                                                     ; loop till we found what were looking for
 .found:
     mov rr, r1                                                  ; found appropriate size class so now we multiplacate with the size of one cache structure entry
     mul rr, CACHE_STRUCT_SIZE                                   ; seeee
@@ -109,7 +109,7 @@ _find_size_class:
 _create_slab:
     mov r5, r0
     bl _pmm_alloc
-    jz rr, .fail
+    bz rr, .fail
     mov r6, rr
     add r7, r6, PAGE_SIZE
     sub r7, SLAB_META_SIZE
@@ -140,32 +140,32 @@ _create_slab:
     ret
 
 _find_free_bit:
-    jz r0, .none
+    bz r0, .none
     mov rr, 0
 .loop:
     mov r1, r0
     and r1, 1
-    jnz r1, .found
+    bnz r1, .found
     shr r0, 1
     add rr, 1
     cmp rr, 64
-    jlt .loop
+    blt .loop
 .none:
     mov rr, 64
 .found:
     ret
 
 _kmalloc:
-    jz r0, .fail
+    bz r0, .fail
     bl _find_size_class
-    jz rr, .alloc_pages
+    bz rr, .alloc_pages
     mov r1, rr
     add r4, r1, CACHE_OFF_PARTIAL
     ldq r2, r4
-    jnz r2, .have_slab
+    bnz r2, .have_slab
     add r4, r1, CACHE_OFF_EMPTY
     ldq r2, r4
-    jz r2, .need_new_slab
+    bz r2, .need_new_slab
     add r5, r2, SLAB_OFF_NEXT
     ldq r3, r5
     add r4, r1, CACHE_OFF_EMPTY
@@ -175,11 +175,11 @@ _kmalloc:
     add r5, r2, SLAB_OFF_NEXT
     stq r5, r3
     stq r4, r2
-    jmp .have_slab
+    b .have_slab
 .need_new_slab:
     mov r0, r1
     bl _create_slab
-    jz rr, .fail
+    bz rr, .fail
     mov r2, rr
     add r4, r1, CACHE_OFF_PARTIAL
     ldq r3, r4
@@ -192,7 +192,7 @@ _kmalloc:
     ldq r0, r4
     bl _find_free_bit
     cmp rr, 64
-    jge .fail
+    bge .fail
     mov r3, rr
     mov r4, 1
     shl r4, r3
@@ -208,7 +208,7 @@ _kmalloc:
     add r5, r1, CACHE_OFF_OBJS
     ldq r5, r5
     cmp r4, r5
-    jne .calc_addr
+    bne .calc_addr
     add r5, r2, SLAB_OFF_NEXT
     ldq r6, r5
     add r5, r1, CACHE_OFF_PARTIAL
@@ -233,14 +233,14 @@ _kmalloc:
     ret
 
 _kfree:
-    jz r0, .done                                                ; null pointer checking r0
+    bz r0, .done                                                ; null pointer checking r0
     mov r1, r0
     and r0, PAGE_MASK
     add r2, r0, PAGE_SIZE
     sub r2, SLAB_META_SIZE
     add r3, r2, SLAB_OFF_CACHE
     ldq r3, r3
-    jz r3, .free_page
+    bz r3, .free_page
     ldq r4, r2
     sub r1, r4
     add r5, r3, CACHE_OFF_SIZE
@@ -252,7 +252,7 @@ _kfree:
     shl r7, r1
     mov r8, r6
     and r8, r7
-    jnz r8, .done
+    bnz r8, .done
     or r6, r7
     add r8, r2, SLAB_OFF_BITMAP
     stq r8, r6
@@ -265,15 +265,15 @@ _kfree:
     add r11, r2, SLAB_OFF_INUSE
     stq r11, r8
     cmp r10, r9
-    jne .check_empty
+    bne .check_empty
     add r11, r3, CACHE_OFF_FULL
 .search_full:
     ldq r12, r11
-    jz r12, .check_empty
+    bz r12, .check_empty
     cmp r12, r2
-    je .found_full
+    be .found_full
     add r11, r12, SLAB_OFF_NEXT
-    jmp .search_full
+    b .search_full
 .found_full:
     add r13, r2, SLAB_OFF_NEXT
     ldq r12, r13
@@ -283,32 +283,32 @@ _kfree:
     add r14, r2, SLAB_OFF_NEXT
     stq r14, r12
     stq r13, r2
-    jmp .done
+    b .done
 .check_empty:
-    jnz r8, .done
+    bnz r8, .done
     add r11, r3, CACHE_OFF_PARTIAL
 .search_partial:
     ldq r12, r11
-    jz r12, .done
+    bz r12, .done
     cmp r12, r2
-    je .found_partial
+    be .found_partial
     add r11, r12, SLAB_OFF_NEXT
-    jmp .search_partial
+    b .search_partial
 .found_partial:
     add r13, r2, SLAB_OFF_NEXT
     ldq r12, r13
     stq r11, r12
     add r12, r3, CACHE_OFF_EMPTY
     ldq r13, r12
-    jnz r13, .destroy_slab
+    bnz r13, .destroy_slab
     add r13, r2, SLAB_OFF_NEXT
     stq r13, 0
     stq r12, r2
-    jmp .done
+    b .done
 .destroy_slab:
     ldq r0, r2
     bl _pmm_free
-    jmp .done
+    b .done
 .free_page:
     and r0, r1, PAGE_MASK
     bl _pmm_free
@@ -319,7 +319,7 @@ _kcalloc:
     mul r0, r1                                                  ; calculating final memory allocation size
     bl _kmalloc, r0                                             ; allocating size
     mov r1, rr                                                  ; keeping return value at a safe place
-    jz rr, .null_exception                                      ; handling null pointer
+    bz rr, .null_exception                                      ; handling null pointer
     bl _memset, r1, 0, r0                                       ; nullifying the memory
 .null_exception:
     ret

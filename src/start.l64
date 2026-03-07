@@ -77,7 +77,7 @@ _mmu_table_add_krwx_pnf:
 ;
 _mmu_table_add_krwx_addr:
     div r2, 8192
-    jmp _mmu_table_add_krwx_pnf
+    b _mmu_table_add_krwx_pnf
 
 ; poc entry
 _poc_main:
@@ -103,7 +103,7 @@ _main:
     bl _mmu_table_add_krwx_pnf, r0, r1, r1
     inc r1
     cmp r1, 50
-    jlt .loop
+    blt .loop
 
     ; l2 page table
     bl _pmm_alloc

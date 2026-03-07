@@ -31,12 +31,12 @@ _puts:
     ldb r1, r0
     inc r0
     bl _putc, r1
-    jnz r1, .start
+    bnz r1, .start
     ret
 
 _putbase:
     mov rr, 0
-    jnz r0, .start
+    bnz r0, .start
     bl _putc, '0'
     ret
 .start:
@@ -46,7 +46,7 @@ _putbase:
     mul r4, r2, r1
     sub r0, r4
     cmp r0, 10
-    jlt .digit
+    blt .digit
     add r0, 39
 .digit:
     add r0, 48
@@ -54,9 +54,9 @@ _putbase:
     inc rr
     push r0
     mov r0, r2
-    jnz r0, .loop
+    bnz r0, .loop
 .print:
     pop r0
     bl _putc
-    jnz r0, .print
+    bnz r0, .print
     ret

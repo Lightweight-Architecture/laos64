@@ -36,7 +36,7 @@ section .data
 
 _rtc_2putbase:
     cmp r0, 10
-    jge .end
+    bge .end
     bl _putc, '0'
 .end:
     bl _putbase, r0, 10
@@ -50,9 +50,9 @@ _print_time:
     bl _rtc_2putbase, r0
     add r1, 4
     cmp r1, RTC_YEAR
-    jgt .loop_2_entry
+    bgt .loop_2_entry
     bl _putc, '.'
-    jmp .loop
+    b .loop
 .loop_2_entry:
     sub r1, 16
     bl _putc, ' '
@@ -61,9 +61,9 @@ _print_time:
     bl _rtc_2putbase, r0
     sub r1, 4
     cmp r1, RTC_SECONDS
-    jlt .end
+    blt .end
     bl _putc, ':'
-    jmp .loop_2
+    b .loop_2
 .end:
     bl _putc, '\n'
     ret
