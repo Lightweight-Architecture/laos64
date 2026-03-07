@@ -24,6 +24,15 @@
 
 %define% PLATFORM_PWR   0x1FE00500
 
+%define% PT_PRESENT     0b00000001
+%define% PT_USER        0b00000010
+%define% PT_DIRTY       0b00000100
+%define% PT_READ        0b00001000
+%define% PT_WRITE       0b00010000
+%define% PT_EXEC        0b00100000
+
+%define% PT_KRWX        0b00111001
+
 section .data
     exception_msg db "[!] panic because of exception code: 0x\0"
     hello_msg db "hello world!\r\n\0"
@@ -43,20 +52,96 @@ _exception_handler:
     ; clr cr2
     ; iret
 
+;
+; r0: table
+; r1: idx
+; r2: pnf
+;
+_mmu_table_add_krwx_pnf:
+    ; making valid PTE out of pnf
+    shl r3, r2, 8
+    or r3, PT_KRWX
+
+    ; compute address
+    mul r1, 8
+    add r1, r0
+
+    ; add to table
+    stq r1, r3
+    ret
+
+;
+; r0: table
+; r1: idx
+; r2: addr
+;
+_mmu_table_add_krwx_addr:
+    div r2, 8192
+    jmp _mmu_table_add_krwx_pnf
+
+; poc entry
+_poc_main:
+    ; add UART device to page table first:
+    ;
+    ; bl _putc, '\n'
+    ;
+    ret
+
 ; kernel entry
 _main:
     ; registering exception handler
     bl _interrupt_register_handler IRQ_EXCEPTION, _exception_handler
 
-    ; let the scheduler do its thing
-    mov r0, 20
-.idle:
-    hlt
-    bl _puts, hello_msg
-    dec r0
-    jnz r0, .idle
+    ; l1 page table
+    bl _pmm_alloc
+    bl _memset, rr, 0x0, 0x2000
+    mov r0, rr
 
-    ; return after 20 interrupts
+    ; registering 1st page as rw
+    clr r1
+.loop:
+    bl _mmu_table_add_krwx_pnf, r0, r1, r1
+    inc r1
+    cmp r1, 50
+    jlt .loop
+
+    ; l2 page table
+    bl _pmm_alloc
+    bl _memset, rr, 0x0, 0x2000
+    mov r1, rr
+    bl _mmu_table_add_krwx_addr, r1, 0x0, r0
+
+    ; l3 page table
+    bl _pmm_alloc
+    bl _memset, rr, 0x0, 0x2000
+    mov r2, rr
+    bl _mmu_table_add_krwx_addr, r2, 0x0, r1
+
+    ; l4 page table
+    bl _pmm_alloc
+    bl _memset, rr, 0x0, 0x2000
+    mov r3, rr
+    bl _mmu_table_add_krwx_addr, r3, 0x0, r2
+
+    ; allocating Stack Memory Page
+    bl _pmm_alloc
+    mov r10, sp
+    add rr, 0x1FFE
+    mov sp, rr
+
+    ; registering basetable cr2
+    shr r4, r3, 13
+    shl r5, r4, 8
+    or r5, PT_PRESENT
+    mov cr4, r5
+
+    ; run PoC
+    bl _poc_main
+
+    ; restore kernel environment
+    clr cr4
+    mov sp, r10
+
     ret
 
 ; main setup routine
