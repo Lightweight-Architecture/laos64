@@ -63,7 +63,7 @@ _get_objs_per_class:
     ret
 
 _slab_init:
-    clr r0
+    mov r0, 0
     mov r1, size_caches
 .loop:
     cmp r0, NUM_SIZE_CLASSES                                    ; checking if r0 is greater than the number of size classes which means all size classes have been initilized
@@ -88,7 +88,7 @@ _slab_init:
     ret
 
 _find_size_class:
-    clr r1                                                      ; clearing 1st general purpose register
+    mov r1, 0
 .loop:
     cmp r1, NUM_SIZE_CLASSES                                    ; same as above, the classes count comparison
     jge .too_large
@@ -103,7 +103,7 @@ _find_size_class:
     add rr, size_caches                                         ; adding offset to caches
     ret
 .too_large:
-    clr rr                                                      ; clearing return register
+    mov rr, 0
     ret
 
 _create_slab:
@@ -136,12 +136,12 @@ _create_slab:
     mov rr, r7
     ret
 .fail:
-    clr rr
+    mov rr, 0
     ret
 
 _find_free_bit:
     jz r0, .none
-    clr rr
+    mov rr, 0
 .loop:
     mov r1, r0
     and r1, 1
@@ -229,7 +229,7 @@ _kmalloc:
     bl _pmm_alloc
     ret
 .fail:
-    clr rr
+    mov rr, 0
     ret
 
 _kfree:

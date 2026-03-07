@@ -34,14 +34,15 @@ _pmm_page_addr:
     ret
 
 _pmm_addr_page:
-    clr rr                                          ; clearing return register to return NULL on failure
+    mov r0, 0                                       ; clearing return register to return NULL on failure
     jz r0, .end
     div rr, r0, PAGE_SIZE                           ; page number by size equals address
 .end:
     ret
 
 _pmm_page_get:
-    clr r1, r2
+    mov r1, 0
+    mov r2, 0
     jz r0, .do_get
 .page_not_null:
     div r1, r0, 8                                   ; byte index
@@ -55,7 +56,8 @@ _pmm_page_get:
     ret
 
 _pmm_page_set:
-    clr r2, r3
+    mov r2, 0
+    mov r3, 0
     jz r0, .do_set
 .page_not_null:
     div r2, r0, 8                                   ; byte index
@@ -75,7 +77,7 @@ _pmm_page_set:
 
 _pmm_alloc:
     ; preparing for loop
-    clr r0
+    mov r0, 0
     ldq r1, pmm_max_pages
 
     ; trying to find free page
@@ -91,7 +93,7 @@ _pmm_alloc:
     bl _pmm_page_addr, r0
     ret
 .no_free_pages:
-    clr rr
+    mov rr, 0
     ret
 
 _pmm_free:
