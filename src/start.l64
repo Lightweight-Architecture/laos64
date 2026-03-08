@@ -98,7 +98,7 @@ _main:
     mov r0, rr
 
     ; registering 1st page as rw
-    mov r1, 0
+    clr r1
 .loop:
     bl _mmu_table_add_krwx_pnf, r0, r1, r1
     inc r1
@@ -139,7 +139,7 @@ _main:
     bl _poc_main
 
     ; restore kernel environment
-    mov cr4, 0
+    clr cr4
     mov sp, r10
 
     ; say hello

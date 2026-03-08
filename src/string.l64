@@ -23,7 +23,7 @@
 ;
 
 _strlen:
-    mov rr, 0                   ; clearing return register
+    clr rr                      ; clearing return register
 .loop:
     ldb r1, r0                  ; loading byte from address
     inc r0, rr                  ; incrementing address

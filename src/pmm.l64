@@ -34,15 +34,14 @@ _pmm_page_addr:
     ret
 
 _pmm_addr_page:
-    mov r0, 0                                       ; clearing return register to return NULL on failure
+    clr r0                                          ; clearing return register to return NULL on failure
     bz r0, .end
     div rr, r0, PAGE_SIZE                           ; page number by size equals address
 .end:
     ret
 
 _pmm_page_get:
-    mov r1, 0
-    mov r2, 0
+    clr r1, r2
     bz r0, .do_get
 .page_not_null:
     div r1, r0, 8                                   ; byte index
@@ -56,8 +55,7 @@ _pmm_page_get:
     ret
 
 _pmm_page_set:
-    mov r2, 0
-    mov r3, 0
+    clr r2, r3
     bz r0, .do_set
 .page_not_null:
     div r2, r0, 8                                   ; byte index
